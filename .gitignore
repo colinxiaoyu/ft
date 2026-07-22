@@ -6,6 +6,8 @@
 .stversions/
 .stignore
 
-/CLAUDE.md
-/docs/
-/.claude/
+# 本地文档/工具（全仓统一忽略：任意层级的这几项都不入 git，随 Syncthing 同步）
+# 不写前导斜杠 = 匹配所有子项目，因此 vec_front/docs、pda/CLAUDE.md 等一并忽略
+CLAUDE.md
+docs/
+.claude/
