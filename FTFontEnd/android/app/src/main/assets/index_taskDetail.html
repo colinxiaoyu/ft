@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>图标轨迹图层</title>
+  <link rel="stylesheet" href="demo.css">
+
+  <script src="minemap.js"></script>
+  <link rel="stylesheet" href="minemap.css">
+
+  <script src="utils.1.js"></script>
+  <script type="module" src="components/map-start-marker.js"></script>
+  <script type="module" src="components/map-end-marker.js"></script>
+  <script type="module" src="components/map-current-marker.js"></script>
+  <script type="module" src="components/dynamic-viewpager.js"></script>
+  <script type="module" src="components/alarm-card.js"></script>
+  <script type="module" src="components/map-alert-marker.3.js"></script>
+
+
+  <link rel="stylesheet" href="style/common.css">
+
+
+  <style>
+    html {
+      font-size: calc(100vw/1920);
+      color: #5B5B5B;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+  <script defer>
+    const minemap = window.minemap
+    /**
+       * 全局参数设置
+       */
+    minemap.domainUrl = 'https://minemap.minedata.cn';
+    minemap.dataDomainUrl = 'https://minemap.minedata.cn';
+    minemap.serverDomainUrl = 'https://sd-data.minedata.cn';
+    minemap.spriteUrl = 'https://minemap.minedata.cn/minemapapi/v2.1.1/sprite/sprite';
+    minemap.serviceUrl = 'https://service.minedata.cn/service';
+    minemap.key = '49b261b57ad044ba8a1695411eb96684';
+
+    minemap.solution = 11001;
+
+    const map = new minemap.Map({
+      container: 'map',
+      style: 'https://service.minedata.cn/map/solu/style/11001',
+      center: [119.2751396, 36.6937505],
+      zoom: 16,
+      pitch: 0,
+      maxZoom: 22,
+      minZoom: 3,
+      projection: 'MERCATOR'
+    });
+
+    map.repaint = true;
+
+
+    // 图片相关
+    const imgSource = {
+      "icon_alarm": "images/icon_alarm.png",
+      "icon_end": "images/icon_end.png",
+      "icon_start": "images/icon_start.png",
+      "img_tractor_top1": "images/img_tractor_top1.png",
+      "img_tractor_top2": "images/img_tractor_top2.png",
+      "img_tractor_top3": "images/img_tractor_top3.png",
+      "img_tractor_top4": "images/img_tractor_top4.png",
+      "img_tractor_top5": "images/img_tractor_top5.png",
+    }
+
+    function getImageByStatus (status) { // 0:离线 1:空闲 2:执行中
+      switch (status) {
+        case 0:
+          return "images/img_tractor_top21.png" // 离线状态
+        case 1:
+          return "images/img_tractor_top41.png"  // 空闲状态
+        case 2:
+          return "images/img_tractor_top51.png"  // 执行中
+        default:
+          return "images/img_tractor_top11.png"  // 常规状态
+      }
+    }
+
+
+    let marker = []; // 
+
+    let popups = []; // 任务显示
+
+    let routes = []; // 路径显示
+
+
+    // 路径相关
+    function addRoute (coordinates, sourceKey, layerId, color) {
+      if (map.getSource(sourceKey)) {
+        map.removeSource(sourceKey);
+      }
+
+      if (map.getLayer(layerId)) {
+        map.removeLayer(layerId);
+      }
+      if (!findRouter(sourceKey)) {
+        routes.push({ sourceKey: sourceKey, layerId: layerId })
+      }
+
+      const carRoute1 = {
+        "type": "Feature",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": coordinates
+        }
+      };
+      // 添加路径数据源
+      map.addSource(sourceKey, {
+        type: 'geojson',
+        data: carRoute1
+      });
+      // 添加路径样式
+      map.addLayer({
+        id: layerId,
+        type: 'line',
+        source: sourceKey,
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': color,
+          'line-width': 2,
+        }
+      });
+    }
+
+
+    function findRouter (key) {
+      let found = routes.find(obj => obj.sourceKey === key);
+      if (found) {
+        return found
+      } else {
+        return null
+      }
+    }
+
+    // 清除所有的路径
+    function clearRouter () {
+
+      for (let index = 0; index < routes.length; index++) {
+        var element = routes[index];
+
+        const { sourceKey, layerId } = element
+        if (map.getSource(sourceKey)) {
+          map.removeSource(sourceKey);
+        }
+
+        if (map.getLayer(layerId)) {
+          map.removeLayer(layerId);
+        }
+      }
+      routes = []
+    }
+
+
+    // 标记点相关
+
+    function addCurrentMarker (position, markerKey, status, heading) {
+      if (!markerKey) markerKey = 'move'
+
+      const pointMarker = document.createElement('map-current-marker');
+      pointMarker.style.zIndex = '200'
+      pointMarker.setAttribute('icon', getImageByStatus(status));
+      pointMarker.setAttribute('heading', heading);
+
+      pointMarker.addEventListener("click", () => onCurrenKeClick(markerKey));
+      const myMarker = new minemap.Marker(pointMarker).setLngLat(position).addTo(map);
+
+      marker.push({ key: markerKey, value: myMarker })
+    }
+
+    // 移动 
+    function moveMakers (key, position) {
+      let found = marker.find(obj => obj.key === key);
+      if (found) {
+        found?.value?.setLngLat(position)
+      }
+    }
+
+    function moveMakersAndUpdate (key, position, status, heading) {
+      let found = marker.find(obj => obj.key === key);
+      if (found) {
+        const element = found.value.getElement()
+        element.setAttribute('icon', getImageByStatus(status))
+        element.setAttribute('heading', heading)
+        found?.value?.setLngLat(position)
+      }
+    }
+
+
+    function findMarker (key) {
+      let found = marker.find(obj => obj.key === key);
+      if (found) {
+        return found.value
+      } else {
+        return null
+      }
+    }
+
+    function delMakers (key) {
+      const foundIndex = marker.findIndex(obj => obj.key === key);
+
+      if (foundIndex !== -1) {
+
+        marker[foundIndex].value.remove();
+        marker[foundIndex].value = null
+        marker.splice(foundIndex, 1);
+
+      } else {
+      }
+    }
+
+    function addStartMarker (position, img, station, markerKey,) {
+
+      if (!markerKey) markerKey = 'start'
+
+      if (!img) img = imgSource.icon_start
+      if (!station) station = '站点B'
+
+      const pointMarker = document.createElement('map-start-marker');
+      pointMarker.setAttribute('title', station);
+      pointMarker.setAttribute('icon', img);
+      const myMarker = new minemap.Marker(pointMarker, { offset: [0, 0] }).setLngLat(position).addTo(map);
+
+      marker.push({ key: markerKey, value: myMarker })
+    }
+
+    function addEndMarker (position, img, station, distance, costTime, markerKey,) {
+      if (!markerKey) markerKey = 'end'
+
+      if (!img) img = imgSource.icon_end
+      if (!station) station = '站点B'
+      if (!distance) distance = '--'
+      if (!costTime) costTime = '--'
+
+
+      const pointMarker = document.createElement('map-end-marker');
+      pointMarker.setAttribute('title', station);
+      pointMarker.setAttribute('icon', img);
+      pointMarker.setAttribute('distance', distance);
+      pointMarker.setAttribute('costTime', costTime);
+
+      const myMarker = new minemap.Marker(pointMarker, { offset: [0, 0] }).setLngLat(position).addTo(map);
+      marker.push({ key: markerKey, value: myMarker })
+
+    }
+
+    function addAlertMarker (position, reason, status, markerKey,) {
+      if (!markerKey) markerKey = 'alertMarker'
+      const pointMarker = document.createElement('map-alert-marker');
+      pointMarker.setAttribute('reason', reason);
+      pointMarker.setAttribute('status', status)
+      const myMarker = new minemap.Marker(pointMarker, { offset: [0, 0] }).setLngLat(position).addTo(map);
+      marker.push({ key: markerKey, value: myMarker })
+    }
+
+
+    function clearMakers () {
+      for (let index = 0; index < marker.length; index++) {
+        var element = marker[index];
+        element.value?.remove()
+        element.value = null;
+      }
+      marker = []
+    }
+
+
+    // 添加窗体信息
+    function addCurrentPopup (position, popupKey, value) {
+
+      const popup = document.createElement('alarm-card');
+      popup.setAttribute('havejob', value.haveJob || 'false')
+      popup.setAttribute('alarm-id', value.vin);
+      popup.setAttribute('speed', value.speed);
+      popup.setAttribute('drivemodetext', value.drivemodetext);
+      popup.setAttribute('data', JSON.stringify(value.data));
+      popup.setAttribute('workstatus', value.workstatus);
+      popup.setAttribute('runstatus', value.runstatus);
+      popup.setAttribute('currentindex', value.currentindex);
+      popup.setAttribute('fault', value.fault || '')
+
+      const card = new minemap.Popup({ closeOnClick: false, closeButton: false, anchor: 'bottom', offset: [0, 0], autoPan: false })
+        .setLngLat(position)
+        .setDOMContent(popup)
+        .addTo(map);
+
+      popups.push({ key: popupKey, value: card })
+    }
+
+
+    function movePopupAndUpdate (key, position, value) {
+
+      let found = popups.find(obj => obj.key === key);
+      if (found) {
+        const element = found.value.getElement()
+
+
+        const popup = element.querySelector('alarm-card')
+        popup.setAttribute('speed', value.speed);
+        popup.setAttribute('data', JSON.stringify(value.data));
+        popup.setAttribute('drivemodetext', value.drivemodetext);
+        popup.setAttribute('workstatus', value.workstatus);
+        popup.setAttribute('runstatus', value.runstatus);
+
+        found?.value?.setLngLat(position)
+      }
+    }
+
+    function findPopup (key) {
+      let found = popups.find(obj => obj.key === key);
+
+      if (found) {
+        return found.value
+      } else {
+        return null
+      }
+    }
+
+    function delPopup (key) {
+      const foundIndex = popups.findIndex(obj => obj.key === key);
+
+      if (foundIndex !== -1) {
+
+        popups[foundIndex].value.remove();
+        popups[foundIndex].value = null
+        popups.splice(foundIndex, 1);
+
+      } else {
+      }
+    }
+
+    // 删除所有窗体
+    function clearPopups () {
+      for (let index = 0; index < popups.length; index++) {
+        var element = popups[index];
+        element.value?.remove()
+        element.value = null;
+      }
+      popups = []
+    }
+
+
+    // 删除所有
+    function clearAll () {
+      console.log('clearAll')
+      clearMakers();
+      clearRouter();
+      clearPopups();
+    }
+
+    /**
+     * 创建地图对象后，开始加载地图资源，地图资源加载完成后触发load事件
+     */
+    map.on('load', function () {
+      const data = { messageType: 'mapOnload' }
+
+      window?.ReactNativeWebView?.postMessage(JSON.stringify(data));
+    });
+
+    function onCurrenKeClick (markerKey) {
+      const data = { messageType: 'mapClick', markerKey: markerKey }
+      window?.ReactNativeWebView?.postMessage(JSON.stringify(data));
+    }
+  </script>
+</body>

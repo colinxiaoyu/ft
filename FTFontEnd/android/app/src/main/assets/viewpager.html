@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic ViewPager with Swipe</title>
+  <style>
+    /* ViewPager 容器 */
+    .viewpager {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+
+    /* 滑动区域 */
+    .viewpager-content {
+      display: flex;
+      transition: transform 0.3s ease-in-out;
+    }
+
+    /* 每一页的样式 */
+    .viewpager-item {
+      flex: 0 0 100%;
+      box-sizing: border-box;
+      padding: 20px;
+      text-align: center;
+      background-color: #f0f0f0;
+      border-radius: 10px;
+    }
+
+    /* 分页指示器容器 */
+    .viewpager-dots {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: center;
+    }
+
+    /* 分页指示器样式 */
+    .viewpager-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin: 0 5px;
+      background-color: #ccc;
+      cursor: pointer;
+    }
+
+    /* 当前页的指示器 */
+    .viewpager-dot.active {
+      background-color: #007bff;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="viewpager" class="viewpager"></div>
+
+  <script>
+    // 模拟数据：你可以从后台或API获取动态数据
+    const data = [
+      { title: 'Slide 1', content: 'This is the first slide.' },
+      { title: 'Slide 2', content: 'This is the second slide.' },
+      { title: 'Slide 3', content: 'This is the third slide.' },
+      { title: 'Slide 4', content: 'This is the fourth slide.' }
+    ];
+
+    // 获取 viewpager 容器
+    const viewpager = document.getElementById('viewpager');
+
+    // 创建 viewpager 的子元素
+    const contentWrapper = document.createElement('div');
+    contentWrapper.classList.add('viewpager-content');
+
+    // 创建每一页的内容
+    data.forEach(item => {
+      const itemElement = document.createElement('div');
+      itemElement.classList.add('viewpager-item');
+      itemElement.innerHTML = `<h2>${item.title}</h2><p>${item.content}</p>`;
+      contentWrapper.appendChild(itemElement);
+    });
+
+    // 将内容区域添加到 viewpager 容器中
+    viewpager.appendChild(contentWrapper);
+
+    // 创建分页指示器
+    const dotsWrapper = document.createElement('div');
+    dotsWrapper.classList.add('viewpager-dots');
+    data.forEach((_, index) => {
+      const dot = document.createElement('div');
+      dot.classList.add('viewpager-dot');
+      dot.dataset.index = index;
+      dotsWrapper.appendChild(dot);
+    });
+
+    // 将分页指示器添加到 viewpager 容器中
+    viewpager.appendChild(dotsWrapper);
+
+    // 获取所有分页指示器
+    const dots = document.querySelectorAll('.viewpager-dot');
+
+    // 滑动到指定页的函数
+    function goToPage (index) {
+      // 更新内容区域的位移
+      contentWrapper.style.transform = `translateX(-${index * 100}%)`;
+
+      // 更新分页指示器的激活状态
+      dots.forEach(dot => dot.classList.remove('active'));
+      dots[index].classList.add('active');
+    }
+
+    // 默认的初始位置索引
+    const initialIndex = 2; // 指定初始显示第3页（索引从0开始）
+
+    // 初始加载时，显示指定的初始页面
+    goToPage(initialIndex);
+
+
+
+    // 触摸滑动实现
+    let startX = 0; // 触摸开始位置
+    let endX = 0;   // 触摸结束位置
+    let isSwiping = false; // 判断是否正在滑动
+
+    // 添加触摸事件监听器
+    viewpager.addEventListener('touchstart', function (event) {
+      startX = event.touches[0].pageX; // 获取触摸开始的 X 坐标
+      isSwiping = true; // 开始滑动
+    });
+
+    viewpager.addEventListener('touchmove', function (event) {
+      if (!isSwiping) return; // 如果没有滑动，不处理
+      endX = event.touches[0].pageX; // 获取当前的 X 坐标
+    });
+
+    viewpager.addEventListener('touchend', function () {
+      if (!isSwiping) return;
+      const deltaX = startX - endX; // 计算滑动距离
+
+      // 根据滑动的距离判断切换方向
+      if (deltaX > 50) {
+        // 向左滑动，切换到下一页
+        currentIndex = Math.min(currentIndex + 1, data.length - 1);
+      } else if (deltaX < -50) {
+        // 向右滑动，切换到上一页
+        currentIndex = Math.max(currentIndex - 1, 0);
+      }
+
+      // 更新页面和指示器
+      goToPage(currentIndex);
+
+      // 重置滑动状态
+      isSwiping = false;
+    });
+
+    // 初始化当前页面索引
+    let currentIndex = initialIndex;
+  </script>
+
+</body>
+
+</html>

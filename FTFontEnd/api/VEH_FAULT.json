@@ -1,0 +1,155 @@
+{
+  "type": "RESULT",
+  "businessType": "VEH_FAULT",
+  "payload": [
+    {
+      "isDeleted": 0,
+      "tenantId": "0",
+      "faultBit": 13,
+      "faultType": "线控",
+      "faultName": "can通讯故障",
+      "faultDesc": "VCU连接智驾CAN连接",
+      "faultCode": "GZ1876836909489631232",
+      "status": 0,
+      "deviceId": "XXHPT1D2022101801",
+      "startTime": "2025-01-08 11:42:43",
+      "location": {
+        "lon": 119.275820499019,
+        "lat": 36.692824021780964,
+        "pointFeature": "119.275820499019_36.692824021780964"
+      },
+      "projectId": "1865994966275584002",
+      "vehInstanceId": "vehicle1869647248882216960",
+      "vin": "XXHPT1D2022101801",
+      "ext": "{\"timestamp\":1736307763654,\"vehicleId\":\"XXHPT1D2022101801\",\"position\":{\"lon\":119.275820499019,\"lat\":36.692824021780964,\"pointFeature\":\"119.275820499019_36.692824021780964\"},\"velocity\":0,\"heading\":88.6243,\"pathId\":65535,\"pathProgress\":255,\"actionValue\":0,\"soc\":5400,\"driveMode\":1,\"tapPos\":33,\"endurance\":4.294967295E9,\"scramFlag\":0,\"vehFault\":6299648}"
+    },
+    {
+      "isDeleted": 0,
+      "tenantId": "0",
+      "faultBit": 21,
+      "faultType": "感知",
+      "faultName": "感知",
+      "faultDesc": "感知模块未启动",
+      "faultCode": "GZ1876836909489631233",
+      "status": 0,
+      "deviceId": "XXHPT1D2022101801",
+      "startTime": "2025-01-08 11:42:43",
+      "location": {
+        "lon": 119.275820499019,
+        "lat": 36.692824021780964,
+        "pointFeature": "119.275820499019_36.692824021780964"
+      },
+      "projectId": "1865994966275584002",
+      "vehInstanceId": "vehicle1869647248882216960",
+      "vin": "XXHPT1D2022101801",
+      "ext": "{\"timestamp\":1736307763654,\"vehicleId\":\"XXHPT1D2022101801\",\"position\":{\"lon\":119.275820499019,\"lat\":36.692824021780964,\"pointFeature\":\"119.275820499019_36.692824021780964\"},\"velocity\":0,\"heading\":88.6243,\"pathId\":65535,\"pathProgress\":255,\"actionValue\":0,\"soc\":5400,\"driveMode\":1,\"tapPos\":33,\"endurance\":4.294967295E9,\"scramFlag\":0,\"vehFault\":6299648}"
+    },
+    {
+      "isDeleted": 0,
+      "tenantId": "0",
+      "faultBit": 22,
+      "faultType": "规划",
+      "faultName": "规划",
+      "faultDesc": "未规划路线",
+      "faultCode": "GZ1876836909489631234",
+      "status": 0,
+      "deviceId": "XXHPT1D2022101801",
+      "startTime": "2025-01-08 11:42:43",
+      "location": {
+        "lon": 119.275820499019,
+        "lat": 36.692824021780964,
+        "pointFeature": "119.275820499019_36.692824021780964"
+      },
+      "projectId": "1865994966275584002",
+      "vehInstanceId": "vehicle1869647248882216960",
+      "vin": "XXHPT1D2022101801",
+      "ext": "{\"timestamp\":1736307763654,\"vehicleId\":\"XXHPT1D2022101801\",\"position\":{\"lon\":119.275820499019,\"lat\":36.692824021780964,\"pointFeature\":\"119.275820499019_36.692824021780964\"},\"velocity\":0,\"heading\":88.6243,\"pathId\":65535,\"pathProgress\":255,\"actionValue\":0,\"soc\":5400,\"driveMode\":1,\"tapPos\":33,\"endurance\":4.294967295E9,\"scramFlag\":0,\"vehFault\":6299648}"
+    }
+  ]
+}
+
+
+{
+  "id": "1872586651049963522",
+  "faultType": "线控",
+  "faultDesc": "通讯中断",
+  "faultCode": "GZ1872586651037380610",
+  "status": 0,
+  "startTime": "2024-12-27 18:13:43",
+  "endTime": null,
+  "location": {
+    "lat": 36.69405604888312,
+    "lon": 119.2785965882269
+  },
+  "vin": "XXHPT1D2022101869",
+  "deviceId": "XXHPT1D2022101869"
+}
+
+
+{
+  "XXHPT1D2022101801": [
+    {
+      "isDeleted": 0,
+      "tenantId": "0",
+      "faultBit": 13,
+      "faultType": "线控",
+      "faultName": "can通讯故障",
+      "faultDesc": "VCU连接智驾CAN连接",
+      "faultCode": "GZ1876836909489631232",
+      "status": 0,
+      "deviceId": "XXHPT1D2022101801",
+      "startTime": "2025-01-08 11:42:43",
+      "location": {
+        "lon": 119.275820499019,
+        "lat": 36.692824021780964,
+        "pointFeature": "119.275820499019_36.692824021780964"
+      },
+      "projectId": "1865994966275584002",
+      "vehInstanceId": "vehicle1869647248882216960",
+      "vin": "XXHPT1D2022101801",
+      "ext": null
+    },
+    {
+      "isDeleted": 0,
+      "tenantId": "0",
+      "faultBit": 21,
+      "faultType": "感知",
+      "faultName": "感知",
+      "faultDesc": "感知模块未启动",
+      "faultCode": "GZ1876836909489631233",
+      "status": 0,
+      "deviceId": "XXHPT1D2022101801",
+      "startTime": "2025-01-08 11:42:43",
+      "location": {
+        "lon": 119.275820499019,
+        "lat": 36.692824021780964,
+        "pointFeature": "119.275820499019_36.692824021780964"
+      },
+      "projectId": "1865994966275584002",
+      "vehInstanceId": "vehicle1869647248882216960",
+      "vin": "XXHPT1D2022101801",
+      "ext": null
+    },
+    {
+      "isDeleted": 0,
+      "tenantId": "0",
+      "faultBit": 22,
+      "faultType": "规划",
+      "faultName": "规划",
+      "faultDesc": "未规划路线",
+      "faultCode": "GZ1876836909489631234",
+      "status": 0,
+      "deviceId": "XXHPT1D2022101801",
+      "startTime": "2025-01-08 11:42:43",
+      "location": {
+        "lon": 119.275820499019,
+        "lat": 36.692824021780964,
+        "pointFeature": "119.275820499019_36.692824021780964"
+      },
+      "projectId": "1865994966275584002",
+      "vehInstanceId": "vehicle1869647248882216960",
+      "vin": "XXHPT1D2022101801",
+      "ext": null
+    }
+  ]
+}

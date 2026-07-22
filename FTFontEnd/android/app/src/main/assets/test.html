@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>球体地图初始化</title>
+  </style>
+</head>
+<script type="module" src="components/map-start-marker.js"></script>
+<script type="module" src="components/map-end-marker.js"></script>
+<script type="module" src="components/map-current-marker.js"></script>
+<script type="module" src="components/dynamic-viewpager.js"></script>
+<script type="module" src="components/alarm-card.js"></script>
+<script type="module" src="components/map-alert-marker.3.js"></script>
+<link rel="stylesheet" href="style/common.css">
+
+
+<body>
+  <div style="width: 200px;box-sizing: border-box;">
+    <dynamic-viewpager id="viewpager" data='[{ "status": 9, "dataEndPoint": "A点-送货点1", "dataDistance": "2.00km", "dataTime": "0.83分", "dataStatus": "已完成" },
+    { "status": -1, "dataEndPoint": "D点-卸货点2", "dataDistance": "0.00km", "dataTime": "0.00分" },
+    { "status": 9, "dataEndPoint": "D点-卸货点2", "dataDistance": "1.95km", "dataTime": "0.80分", "dataStatus": "已完成" },
+    { "status": 1, "dataEndPoint": "D点-卸货点2", "dataDistance": "NaNkm", "dataTime": "NaN分", "dataStatus": "执行中" }]'
+      currentindex="3"></dynamic-viewpager>
+  </div>
+
+  <alarm-card></alarm-card>
+
+
+
+
+</body>
+
+<script>
+  var result = {
+    "LTFKEVS7XX08261": {
+      "data":
+        [{ "status": 9, "dataEndPoint": "A点-送货点1", "dataDistance": "2.00km", "dataTime": "0.83分", "dataStatus": "已完成" },
+        { "status": -1, "dataEndPoint": "D点-卸货点2", "dataDistance": "0.00km", "dataTime": "0.00分" },
+        { "status": 9, "dataEndPoint": "D点-卸货点2", "dataDistance": "1.95km", "dataTime": "0.80分", "dataStatus": "已完成" },
+        { "status": 1, "dataEndPoint": "D点-卸货点2", "dataDistance": "NaNkm", "dataTime": "NaN分", "dataStatus": "执行中" }],
+      "taskId": "1875043116209332225", "license": "京A8261", "heading": 90.1729, "actionCode": "loadCargo", "speed": 180, "actionStatus": "GO_WORKING", "vehInstanceId": "vehicle1827975241448202240", "vehStatus": 2, "latitude": "36.694023407305984", "driveMode": 4, "remGoTime": 0, "longitude": "119.27749667545734", "remMileage": -4304, "deviceId": "LTFKEVS7XX08261", "tapPos": 31, "projectId": "1865994966275584002", "timestamp": null, "pathPogress": 17, "taskStatus": 1, "jobId": "1875043115978645505", "scramFlag": 0, "vin": "LTFKEVS7XX08261", "velocity": 50, "elevation": "null", "currentindex": "3"
+    }
+  }
+  Object.entries(result).map(([key, value]) => {
+    if (findPopup(key)) {
+      movePopupAndUpdate(key, [value.longitude, value.latitude], value)
+    } else {
+      addCurrentPopup([value.longitude, value.latitude], key, value);
+      reSetCenter([value.longitude, value.latitude])
+    }
+  });
+</script>

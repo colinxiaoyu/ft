@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>OpenLayers 厂区地图</title>
+
+  <link rel="stylesheet" href="ol/ol.css">
+  <script src="ol/ol.js"></script>
+
+  <script src="ol-coord.js"></script>
+  <script type="module" src="components/map-start-marker.js"></script>
+  <script type="module" src="components/map-end-marker.js"></script>
+  <script type="module" src="components/map-current-marker.js"></script>
+  <script type="module" src="components/dynamic-viewpager.js"></script>
+  <script type="module" src="components/alarm-card.js"></script>
+  <script type="module" src="components/map-alert-marker.3.js"></script>
+
+  <link rel="stylesheet" href="style/common.css">
+
+  <style>
+    html {
+      font-size: calc(100vw/1920);
+      color: #5B5B5B;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    /* height:100% 需要整条祖先链都有高度，缺了 html 地图会塌成 0 高 */
+    html,
+    body,
+    #map {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /*
+     * 必须给 body 一个绝对字号。
+     * html 的 font-size 是 calc(100vw/1920)（≈1px，供组件的 rem 单位换算），
+     * 未显式设字号的元素（如 map-start-marker 里的 h4）会继承它而缩成不可见。
+     */
+    body {
+      font-family: "PingFang SC", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+      font-size: 14px;
+    }
+
+    /* 无底图，画布底色即厂区地面 */
+    #map {
+      background: #EEF1F5;
+    }
+
+    /* OL 默认会给 overlay 元素定位，marker 组件内部已自带 translate(-50%,-50%)，此处不要再加偏移 */
+    .ol-overlay-container {
+      will-change: transform;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+
+  <script defer>
+    /* =========================================================================
+     * 厂区地图 —— 全部由 OpenLayers 矢量绘制，不使用任何瓦片底图服务
+     *
+     * 厂区是封闭园区，不需要街道底图，所以：
+     *   - 不依赖高德/OSM/天地图，无需 key、无需授权、断网可用
+     *   - 没有底图就没有“数据坐标系必须和底图坐标系对齐”的问题
+     * 唯一的要求是：厂房、路线、车辆必须在同一个坐标系里。
+     * 车端上来的位置和后端下发的路径都是 GCJ-02（车端 WGS84 由 MessageCodec.java 原生转换），
+     * 所以本页以 GCJ-02 为基准坐标系。厂房若是 WGS84 测绘的，
+     * 用 setBuildings(geojson, 'wgs84') 声明，页面会转换后再入图。
+     *
+     * OL 的矢量图层默认渲染到 <canvas>。
+     * ========================================================================= */
+
+    const DEFAULT_CENTER = [119.2751396, 36.6937505];
+    const DEFAULT_ZOOM = 16;
+
+    /* =========================================================================
+     * 坐标出入口 —— 所有经纬度进出地图只走这两个函数
+     * ========================================================================= */
+
+    // 业务坐标(GCJ-02, [lng,lat]) -> 地图内部投影坐标(EPSG:3857)
+    function toMapCoord(lngLat) {
+      return ol.proj.fromLonLat([parseFloat(lngLat[0]), parseFloat(lngLat[1])]);
+    }
+
+    // 地图内部投影坐标 -> 业务坐标(GCJ-02)
+    function toBizCoord(mapCoord) {
+      return ol.proj.toLonLat(mapCoord);
+    }
+
+    /* =========================================================================
+     * 图层
+     *   zIndex 5  厂房（面）
+     *   zIndex 10 路线（线）
+     *   overlay   车辆/起终点/告警/弹窗（DOM）
+     * ========================================================================= */
+    const buildingSource = new ol.source.Vector();
+
+    const buildingLayer = new ol.layer.Vector({
+      source: buildingSource,
+      zIndex: 5,
+      style: function (feature) {
+        return new ol.style.Style({
+          fill: new ol.style.Fill({ color: feature.get('fillColor') || 'rgba(45,126,248,0.10)' }),
+          stroke: new ol.style.Stroke({ color: feature.get('strokeColor') || '#2D7EF8', width: 1.5 }),
+          text: new ol.style.Text({
+            text: feature.get('name') || '',
+            font: 'bold 13px "PingFang SC","Microsoft YaHei",sans-serif',
+            fill: new ol.style.Fill({ color: '#33383F' }),
+            // 描边让厂房名压在填充色上也读得清
+            stroke: new ol.style.Stroke({ color: 'rgba(255,255,255,0.9)', width: 3 }),
+            overflow: true,
+          }),
+        });
+      },
+    });
+
+    const olMap = new ol.Map({
+      target: 'map',
+      layers: [buildingLayer],
+      view: new ol.View({
+        center: toMapCoord(DEFAULT_CENTER),
+        zoom: DEFAULT_ZOOM,
+        maxZoom: 22,
+        minZoom: 3,
+        constrainResolution: false,
+      }),
+      controls: [], // 无底图、无第三方数据，不需要任何控件
+    });
+
+    /* =========================================================================
+     * 厂房
+     * ========================================================================= */
+
+    /**
+     * 绘制厂房。
+     * @param geojson  GeoJSON FeatureCollection，Polygon 要素，properties 支持 name/fillColor/strokeColor
+     * @param frame    坐标系：'gcj02'(默认，与车辆/路径一致) 或 'wgs84'(测绘数据，需转换后入图)
+     */
+    function setBuildings(geojson, frame) {
+      buildingSource.clear();
+      if (!geojson || !geojson.features) return;
+
+      const toGcj = frame === 'wgs84'
+        ? (c) => Coord.wgs84togcj02(parseFloat(c[0]), parseFloat(c[1]))
+        : (c) => c;
+
+      geojson.features.forEach(f => {
+        const g = f.geometry;
+        if (!g || g.type !== 'Polygon') return;
+
+        // Polygon: [ [ [lng,lat], ... ] ]，外环 + 可选内环
+        const rings = g.coordinates.map(ring => ring.map(c => toMapCoord(toGcj(c))));
+        const feature = new ol.Feature({ geometry: new ol.geom.Polygon(rings) });
+
+        const props = f.properties || {};
+        feature.set('name', props.name || '');
+        feature.set('fillColor', props.fillColor || null);
+        feature.set('strokeColor', props.strokeColor || null);
+
+        buildingSource.addFeature(feature);
+      });
+    }
+
+    function clearBuildings() {
+      buildingSource.clear();
+    }
+
+    // 视野缩放到全部厂房，厂区地图的默认视角
+    function fitBuildings(margin = 0.1) {
+      if (buildingSource.getFeatures().length === 0) return;
+      const extent = buildingSource.getExtent();
+      olMap.getView().fit(extent, {
+        size: olMap.getSize(),
+        padding: [
+          ol.extent.getHeight(extent) * margin,
+          ol.extent.getWidth(extent) * margin,
+          ol.extent.getHeight(extent) * margin,
+          ol.extent.getWidth(extent) * margin,
+        ],
+        maxZoom: 20,
+      });
+    }
+
+    /* =========================================================================
+     * 图片资源 —— 与 index_taskDetail.html 保持一致
+     * ========================================================================= */
+    const imgSource = {
+      "icon_alarm": "images/icon_alarm.png",
+      "icon_end": "images/icon_end.png",
+      "icon_start": "images/icon_start.png",
+    };
+
+    function getImageByStatus(status) { // 0:离线 1:空闲 2:执行中
+      switch (status) {
+        case 0: return "images/img_tractor_top21.png";
+        case 1: return "images/img_tractor_top41.png";
+        case 2: return "images/img_tractor_top51.png";
+        default: return "images/img_tractor_top11.png";
+      }
+    }
+
+    let marker = []; // [{key, value: ol.Overlay}]
+    let popups = []; // [{key, value: ol.Overlay}]
+    let routes = []; // [{sourceKey, layerId, layer}]
+
+    /* =========================================================================
+     * 路线
+     * ========================================================================= */
+    function addRoute(coordinates, sourceKey, layerId, color) {
+      // 同 key 先移除，行为对齐原实现
+      const existing = findRouter(sourceKey);
+      if (existing) {
+        olMap.removeLayer(existing.layer);
+        routes = routes.filter(r => r.sourceKey !== sourceKey);
+      }
+
+      if (!coordinates || coordinates.length === 0) return;
+
+      const feature = new ol.Feature({
+        geometry: new ol.geom.LineString(coordinates.map(toMapCoord)),
+      });
+
+      const layer = new ol.layer.Vector({
+        source: new ol.source.Vector({ features: [feature] }),
+        style: new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: color,
+            width: 2,
+            lineCap: 'round',
+            lineJoin: 'round',
+          }),
+        }),
+        zIndex: 10,
+      });
+
+      olMap.addLayer(layer);
+      routes.push({ sourceKey, layerId, layer });
+    }
+
+    function findRouter(key) {
+      return routes.find(obj => obj.sourceKey === key) || null;
+    }
+
+    function clearRouter() {
+      routes.forEach(r => olMap.removeLayer(r.layer));
+      routes = [];
+    }
+
+    /* =========================================================================
+     * 标记点
+     *
+     * 四个 marker 组件的 shadow DOM 内部都有 transform: translate(-50%,-50%)，
+     * 与 minemap.Marker 的表现一致，所以 Overlay 用默认 top-left 定位即可对齐。
+     * ========================================================================= */
+    function makeOverlay(element, position, positioning) {
+      const overlay = new ol.Overlay({
+        element: element,
+        position: toMapCoord(position),
+        positioning: positioning || 'top-left',
+        stopEvent: false, // 让地图拖动手势可以穿透 marker
+      });
+      olMap.addOverlay(overlay);
+      return overlay;
+    }
+
+    function addCurrentMarker(position, markerKey, status, heading) {
+      if (!markerKey) markerKey = 'move';
+
+      const pointMarker = document.createElement('map-current-marker');
+      pointMarker.style.zIndex = '200';
+      pointMarker.setAttribute('icon', getImageByStatus(status));
+      pointMarker.setAttribute('heading', heading);
+      pointMarker.addEventListener('click', () => onCurrenKeClick(markerKey));
+
+      marker.push({ key: markerKey, value: makeOverlay(pointMarker, position) });
+    }
+
+    function moveMakers(key, position) {
+      const found = marker.find(obj => obj.key === key);
+      if (found) found.value.setPosition(toMapCoord(position));
+    }
+
+    function moveMakersAndUpdate(key, position, status, heading) {
+      const found = marker.find(obj => obj.key === key);
+      if (found) {
+        const element = found.value.getElement();
+        element.setAttribute('icon', getImageByStatus(status));
+        element.setAttribute('heading', heading);
+        found.value.setPosition(toMapCoord(position));
+      }
+    }
+
+    function findMarker(key) {
+      const found = marker.find(obj => obj.key === key);
+      return found ? found.value : null;
+    }
+
+    function delMakers(key) {
+      const foundIndex = marker.findIndex(obj => obj.key === key);
+      if (foundIndex !== -1) {
+        olMap.removeOverlay(marker[foundIndex].value);
+        marker[foundIndex].value = null;
+        marker.splice(foundIndex, 1);
+      }
+    }
+
+    function addStartMarker(position, img, station, markerKey) {
+      if (!markerKey) markerKey = 'start';
+      if (!img) img = imgSource.icon_start;
+      if (!station) station = '站点B';
+
+      const pointMarker = document.createElement('map-start-marker');
+      pointMarker.setAttribute('title', station);
+      pointMarker.setAttribute('icon', img);
+
+      marker.push({ key: markerKey, value: makeOverlay(pointMarker, position) });
+    }
+
+    function addEndMarker(position, img, station, distance, costTime, markerKey) {
+      if (!markerKey) markerKey = 'end';
+      if (!img) img = imgSource.icon_end;
+      if (!station) station = '站点B';
+      if (!distance) distance = '--';
+      if (!costTime) costTime = '--';
+
+      const pointMarker = document.createElement('map-end-marker');
+      pointMarker.setAttribute('title', station);
+      pointMarker.setAttribute('icon', img);
+      pointMarker.setAttribute('distance', distance);
+      pointMarker.setAttribute('costTime', costTime);
+
+      marker.push({ key: markerKey, value: makeOverlay(pointMarker, position) });
+    }
+
+    function addAlertMarker(position, reason, status, markerKey) {
+      if (!markerKey) markerKey = 'alertMarker';
+
+      const pointMarker = document.createElement('map-alert-marker');
+      pointMarker.setAttribute('reason', reason);
+      pointMarker.setAttribute('status', status);
+
+      marker.push({ key: markerKey, value: makeOverlay(pointMarker, position) });
+    }
+
+    function clearMakers() {
+      marker.forEach(m => {
+        if (m.value) olMap.removeOverlay(m.value);
+        m.value = null;
+      });
+      marker = [];
+    }
+
+    /* =========================================================================
+     * 弹窗
+     *
+     * 外层包一个 div，保持 minemap.Popup 的 DOM 结构，
+     * 这样 movePopupAndUpdate 里的 getElement().querySelector('alarm-card') 原样可用。
+     * ========================================================================= */
+    function addCurrentPopup(position, popupKey, value) {
+      const popup = document.createElement('alarm-card');
+      popup.setAttribute('havejob', value.haveJob || 'false');
+      popup.setAttribute('alarm-id', value.vin);
+      popup.setAttribute('speed', value.speed);
+      popup.setAttribute('drivemodetext', value.drivemodetext);
+      popup.setAttribute('data', JSON.stringify(value.data));
+      popup.setAttribute('workstatus', value.workstatus);
+      popup.setAttribute('runstatus', value.runstatus);
+      popup.setAttribute('currentindex', value.currentindex);
+      popup.setAttribute('fault', value.fault || '');
+
+      const container = document.createElement('div');
+      container.className = 'ol-popup-content';
+      container.appendChild(popup);
+
+      popups.push({ key: popupKey, value: makeOverlay(container, position, 'bottom-center') });
+    }
+
+    function movePopupAndUpdate(key, position, value) {
+      const found = popups.find(obj => obj.key === key);
+      if (found) {
+        const element = found.value.getElement();
+        const popup = element.querySelector('alarm-card');
+        popup.setAttribute('speed', value.speed);
+        popup.setAttribute('data', JSON.stringify(value.data));
+        popup.setAttribute('drivemodetext', value.drivemodetext);
+        popup.setAttribute('workstatus', value.workstatus);
+        popup.setAttribute('runstatus', value.runstatus);
+        found.value.setPosition(toMapCoord(position));
+      }
+    }
+
+    function findPopup(key) {
+      const found = popups.find(obj => obj.key === key);
+      return found ? found.value : null;
+    }
+
+    function delPopup(key) {
+      const foundIndex = popups.findIndex(obj => obj.key === key);
+      if (foundIndex !== -1) {
+        olMap.removeOverlay(popups[foundIndex].value);
+        popups[foundIndex].value = null;
+        popups.splice(foundIndex, 1);
+      }
+    }
+
+    function clearPopups() {
+      popups.forEach(p => {
+        if (p.value) olMap.removeOverlay(p.value);
+        p.value = null;
+      });
+      popups = [];
+    }
+
+    function clearAll() {
+      clearMakers();
+      clearRouter();
+      clearPopups();
+    }
+
+    /* =========================================================================
+     * 视野
+     * ========================================================================= */
+    function reSetCenter(center) {
+      olMap.getView().setCenter(toMapCoord(center));
+    }
+
+    function fitBounds(coordinates, margin = 0) {
+      if (!coordinates || coordinates.length === 0) return;
+
+      const extent = ol.extent.boundingExtent(coordinates.map(toMapCoord));
+      const padding = margin
+        ? [
+          (ol.extent.getHeight(extent) * margin),
+          (ol.extent.getWidth(extent) * margin),
+          (ol.extent.getHeight(extent) * margin),
+          (ol.extent.getWidth(extent) * margin),
+        ]
+        : [0, 0, 0, 0];
+
+      olMap.getView().fit(extent, {
+        size: olMap.getSize(),
+        padding: padding,
+        maxZoom: 20,
+      });
+    }
+
+    /* =========================================================================
+     * RN 通信 —— 协议与 index_taskDetail.html 完全一致
+     * ========================================================================= */
+    function post(data) {
+      window?.ReactNativeWebView?.postMessage(JSON.stringify(data));
+    }
+
+    function onCurrenKeClick(markerKey) {
+      post({ messageType: 'mapClick', markerKey: markerKey });
+    }
+
+    /*
+     * OL 没有 'load' 事件，用首帧渲染等价于 minemap 的 load。
+     * 用 postrender 而不是 rendercomplete：后者要等所有数据加载完，
+     * 首帧就绪即可开始注入，再加个定时兜底保证这条消息一定发得出去。
+     */
+    const loadHandlers = [];
+    let mapLoaded = false;
+
+    function fireMapOnload() {
+      if (mapLoaded) return;
+      mapLoaded = true;
+      loadHandlers.forEach(fn => fn());
+      post({ messageType: 'mapOnload' });
+    }
+
+    const map = {
+      on(type, fn) {
+        if (type === 'dragstart') {
+          olMap.on('pointerdrag', fn);
+        } else if (type === 'load') {
+          loadHandlers.push(fn);
+        } else {
+          olMap.on(type, fn);
+        }
+      },
+      setCenter(center) {
+        olMap.getView().setCenter(toMapCoord(center));
+      },
+      getOlMap() {
+        return olMap;
+      },
+    };
+
+    olMap.once('postrender', fireMapOnload);
+    setTimeout(fireMapOnload, 3000);
+
+    // 页面自带的拖动上报，行为对齐 RN 注入的 dragstart 监听
+    olMap.on('pointerdrag', function () {
+      post({ messageType: 'mapDrag' });
+    });
+  </script>
+</body>
+
+</html>

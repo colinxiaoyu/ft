@@ -1,0 +1,16 @@
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">192.168.110.2</domain>
+        <domain includeSubdomains="true">36.110.35.26</domain>
+        <domain includeSubdomains="true">61721pi2ip51.vicp.fun</domain>
+        <domain includeSubdomains="true">qrcode.diuxiaohao.com</domain>
+        <domain includeSubdomains="true">icv.foton.com.cn</domain>
+        <domain includeSubdomains="true">minedata.cn</domain>
+        <domain includeSubdomains="true">192.168.2.101</domain>
+        <domain includeSubdomains="true">192.168.1.4</domain>
+        <domain includeSubdomains="true">10.1.130.26</domain>
+        <domain includeSubdomains="true">10.1.155.210</domain>
+        <domain includeSubdomains="true">10.1.154.174</domain>
+        <domain includeSubdomains="true">10.1.133.77</domain>
+    </domain-config>
+</network-security-config>
