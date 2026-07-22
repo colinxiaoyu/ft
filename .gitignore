@@ -5,3 +5,7 @@
 .stfolder/
 .stversions/
 .stignore
+
+/CLAUDE.md
+/docs/
+/.claude/
