@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 940" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">
+  <defs>
+    <marker id="ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d9560b"/>
+    </marker>
+    <marker id="ar-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#3d6c99"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1440" height="940" fill="#ffffff"/>
+
+  <!-- 标题 -->
+  <text x="48" y="44" font-size="23" font-weight="700" fill="#1e252e">车载侧屏(vec_side)现有架构</text>
+  <text x="48" y="70" font-size="12.5" fill="#55606e">CURRENT.VEH 车载分支 · SDK / 硬件更换前现状 · main @ 2026-07</text>
+
+  <!-- 图例 -->
+  <line x1="920" y1="34" x2="962" y2="34" stroke="#d9560b" stroke-width="2.5"/>
+  <text x="972" y="38" font-size="12" fill="#1e252e">① 车端直连 · 原生 SDK 通道</text>
+  <line x1="920" y1="58" x2="962" y2="58" stroke="#3d6c99" stroke-width="2.5"/>
+  <text x="972" y="62" font-size="12" fill="#1e252e">②③ 云端 · 纯 JS 通道(不受硬件更换影响)</text>
+  <rect x="920" y="74" width="42" height="14" fill="none" stroke="#d9560b" stroke-width="1.6" stroke-dasharray="5 4"/>
+  <text x="972" y="85" font-size="12" fill="#1e252e">本次 SDK / 硬件替换范围</text>
+
+  <!-- 分层横带 -->
+  <rect x="40" y="100" width="1360" height="250" fill="#f4f6f9" rx="8"/>
+  <text x="56" y="124" font-size="12" font-weight="600" fill="#8792a0" letter-spacing="1">RN JS 层(src/)</text>
+
+  <rect x="40" y="362" width="1360" height="86" fill="#eef1f5" rx="8"/>
+  <text x="56" y="386" font-size="12" font-weight="600" fill="#8792a0" letter-spacing="1">RN 桥</text>
+
+  <rect x="40" y="460" width="1360" height="306" fill="#f4f6f9" rx="8"/>
+  <text x="56" y="484" font-size="12" font-weight="600" fill="#8792a0" letter-spacing="1">Android 原生层</text>
+
+  <rect x="40" y="800" width="1360" height="100" fill="#eef1f5" rx="8"/>
+  <text x="56" y="824" font-size="12" font-weight="600" fill="#8792a0" letter-spacing="1">外部系统</text>
+
+  <!-- ============ RN JS 层 ============ -->
+  <rect x="190" y="118" width="1180" height="58" fill="#ffffff" stroke="#c8cfd8" rx="6"/>
+  <text x="780" y="142" font-size="14" font-weight="600" fill="#1e252e" text-anchor="middle">车载 Screens(CURRENT.VEH)</text>
+  <text x="780" y="162" font-size="11.5" fill="#55606e" text-anchor="middle">HomeScreen · JobManagerScreen · FaultListScreen · Login / Settings</text>
+
+  <rect x="190" y="204" width="240" height="56" fill="#ffffff" stroke="#e2a077" rx="6"/>
+  <text x="310" y="227" font-size="13" font-weight="600" fill="#1e252e" text-anchor="middle">dva · nativeMessageModal</text>
+  <text x="310" y="246" font-size="11" fill="#55606e" text-anchor="middle">VinMessage 状态 · 指令 effects</text>
+
+  <rect x="190" y="286" width="240" height="56" fill="#ffffff" stroke="#e2a077" rx="6"/>
+  <text x="310" y="309" font-size="13" font-weight="600" fill="#1e252e" text-anchor="middle">services · V2CMessageS</text>
+  <text x="310" y="328" font-size="11" fill="#55606e" text-anchor="middle">connectToServer / sendCommand / 监听</text>
+
+  <rect x="1090" y="204" width="280" height="56" fill="#ffffff" stroke="#9db6cc" rx="6"/>
+  <text x="1230" y="227" font-size="13" font-weight="600" fill="#1e252e" text-anchor="middle">dva · 业务 models</text>
+  <text x="1230" y="246" font-size="11" fill="#55606e" text-anchor="middle">homeScreen / jobManager / faultList Modal</text>
+
+  <rect x="1090" y="286" width="280" height="56" fill="#ffffff" stroke="#9db6cc" rx="6"/>
+  <text x="1230" y="309" font-size="13" font-weight="600" fill="#1e252e" text-anchor="middle">services + utils/Api*.js</text>
+  <text x="1230" y="328" font-size="11" fill="#55606e" text-anchor="middle">jobS · vehS · faultS · socketS · getConfig()</text>
+
+  <!-- ============ RN 桥 ============ -->
+  <rect x="190" y="380" width="240" height="52" fill="#ffffff" stroke="#e2a077" rx="6"/>
+  <text x="310" y="401" font-size="13" font-weight="600" fill="#1e252e" text-anchor="middle">NativeModules.TcpNativeModule</text>
+  <text x="310" y="420" font-size="11" fill="#55606e" text-anchor="middle">方法调用(下行)</text>
+
+  <rect x="800" y="380" width="250" height="52" fill="#ffffff" stroke="#e2a077" rx="6"/>
+  <text x="925" y="401" font-size="13" font-weight="600" fill="#1e252e" text-anchor="middle">DeviceEventEmitter</text>
+  <text x="925" y="420" font-size="11" fill="#55606e" text-anchor="middle">事件 'V2CMessage'(上行 JSON)</text>
+
+  <!-- ============ Android 原生层 ============ -->
+  <!-- 替换范围虚线框 -->
+  <rect x="178" y="466" width="584" height="292" fill="none" stroke="#d9560b" stroke-width="1.8" stroke-dasharray="7 5" rx="8"/>
+  <text x="754" y="488" font-size="12" font-weight="600" fill="#d9560b" text-anchor="end">SDK 替换影响范围</text>
+
+  <rect x="190" y="496" width="240" height="56" fill="#ffffff" stroke="#e2a077" rx="6"/>
+  <text x="310" y="519" font-size="13" font-weight="600" fill="#1e252e" text-anchor="middle">TcpNativeModule(原生)</text>
+  <text x="310" y="538" font-size="11" fill="#55606e" text-anchor="middle">JobCommand 组装 · 重连监控 5s</text>
+
+  <!-- SDK 大框 -->
+  <rect x="190" y="574" width="560" height="170" fill="#fdf6f1" stroke="#d9560b" stroke-width="1.4" rx="8"/>
+  <text x="206" y="596" font-size="13" font-weight="700" fill="#d9560b">cn.cicv.cloud SDK(源码内嵌)</text>
+
+  <rect x="206" y="608" width="160" height="50" fill="#ffffff" stroke="#dcc4b2" rx="5"/>
+  <text x="286" y="628" font-size="12" font-weight="600" fill="#1e252e" text-anchor="middle">client.TcpClient</text>
+  <text x="286" y="645" font-size="10.5" fill="#55606e" text-anchor="middle">收发线程 · 拆包</text>
+
+  <rect x="382" y="608" width="180" height="50" fill="#ffffff" stroke="#dcc4b2" rx="5"/>
+  <text x="472" y="628" font-size="12" font-weight="600" fill="#1e252e" text-anchor="middle">codec.MessageCodec</text>
+  <text x="472" y="645" font-size="10.5" fill="#55606e" text-anchor="middle">16B 帧头 · 编解码</text>
+
+  <rect x="578" y="608" width="156" height="50" fill="#ffffff" stroke="#dcc4b2" rx="5"/>
+  <text x="656" y="628" font-size="12" font-weight="600" fill="#1e252e" text-anchor="middle">utils</text>
+  <text x="656" y="645" font-size="10.5" fill="#55606e" text-anchor="middle">WGS84→GCJ02 · 单位换算</text>
+
+  <rect x="206" y="674" width="256" height="50" fill="#ffffff" stroke="#dcc4b2" rx="5"/>
+  <text x="334" y="694" font-size="12" font-weight="600" fill="#1e252e" text-anchor="middle">message(下行)</text>
+  <text x="334" y="711" font-size="10.5" fill="#55606e" text-anchor="middle">StateMessage 0x15 · JobCommandReply 0x1B</text>
+
+  <rect x="478" y="674" width="256" height="50" fill="#ffffff" stroke="#dcc4b2" rx="5"/>
+  <text x="606" y="694" font-size="12" font-weight="600" fill="#1e252e" text-anchor="middle">command(上行)</text>
+  <text x="606" y="711" font-size="10.5" fill="#55606e" text-anchor="middle">JobCommand · Action / TaskJobCommand</text>
+
+  <rect x="800" y="600" width="250" height="64" fill="#ffffff" stroke="#c8cfd8" rx="6"/>
+  <text x="925" y="626" font-size="13" font-weight="600" fill="#1e252e" text-anchor="middle">MainActivity + AppHandler</text>
+  <text x="925" y="646" font-size="11" fill="#55606e" text-anchor="middle">主线程中转 · Gson → JSON(可保留)</text>
+
+  <!-- ============ 外部系统 ============ -->
+  <rect x="190" y="816" width="560" height="64" fill="#ffffff" stroke="#d9560b" stroke-width="1.6" stroke-dasharray="7 5" rx="6"/>
+  <text x="470" y="842" font-size="13.5" font-weight="700" fill="#1e252e" text-anchor="middle">车端域控制器(本次更换的硬件)</text>
+  <text x="470" y="862" font-size="11.5" fill="#55606e" text-anchor="middle">TCP :5000 · V2C 自定义二进制协议 · 192.168.2.79 / 101</text>
+
+  <rect x="1090" y="816" width="280" height="64" fill="#ffffff" stroke="#9db6cc" rx="6"/>
+  <text x="1230" y="842" font-size="13.5" font-weight="700" fill="#1e252e" text-anchor="middle">福田云平台 icv.foton.com.cn</text>
+  <text x="1230" y="862" font-size="11.5" fill="#55606e" text-anchor="middle">WebSocket 调度推送 · HTTP REST · 3D 地图页</text>
+
+  <!-- ============ 连线:通道① 下行(指令) ============ -->
+  <line x1="310" y1="176" x2="310" y2="202" stroke="#d9560b" stroke-width="1.8" marker-end="url(#ar-a)"/>
+  <line x1="310" y1="260" x2="310" y2="284" stroke="#d9560b" stroke-width="1.8" marker-end="url(#ar-a)"/>
+  <text x="322" y="277" font-size="10.5" fill="#a15427">急停 / 模式切换</text>
+  <line x1="310" y1="342" x2="310" y2="378" stroke="#d9560b" stroke-width="1.8" marker-end="url(#ar-a)"/>
+  <line x1="310" y1="432" x2="310" y2="494" stroke="#d9560b" stroke-width="1.8" marker-end="url(#ar-a)"/>
+  <line x1="310" y1="552" x2="310" y2="572" stroke="#d9560b" stroke-width="1.8" marker-end="url(#ar-a)"/>
+  <text x="322" y="568" font-size="10.5" fill="#a15427">encode → socket 写出</text>
+
+  <!-- 通道① TCP 长连接 -->
+  <line x1="470" y1="744" x2="470" y2="814" stroke="#d9560b" stroke-width="2" marker-start="url(#ar-a)" marker-end="url(#ar-a)"/>
+  <text x="484" y="776" font-size="11" font-weight="600" fill="#a15427">TCP 长连接</text>
+  <text x="484" y="794" font-size="10.5" font-weight="600" fill="#d9560b">⚠ IP 写死于 Api.js proConfig(192.168.2.79:5000),运行时修改不持久化</text>
+
+  <!-- ============ 连线:通道① 上行(状态) ============ -->
+  <line x1="750" y1="632" x2="798" y2="632" stroke="#d9560b" stroke-width="1.8" marker-end="url(#ar-a)"/>
+  <text x="774" y="622" font-size="10.5" fill="#a15427" text-anchor="middle">Handler</text>
+  <line x1="925" y1="600" x2="925" y2="434" stroke="#d9560b" stroke-width="1.8" marker-end="url(#ar-a)"/>
+  <text x="937" y="530" font-size="10.5" fill="#a15427">emit JSON</text>
+  <line x1="925" y1="380" x2="925" y2="178" stroke="#d9560b" stroke-width="1.8" marker-end="url(#ar-a)"/>
+  <text x="937" y="290" font-size="10.5" fill="#a15427">useNativeMessageListener</text>
+  <text x="937" y="306" font-size="10.5" fill="#a15427">→ dispatch vehNativeMessage</text>
+
+  <!-- ============ 连线:通道②③ 云端(纯 JS) ============ -->
+  <line x1="1230" y1="176" x2="1230" y2="202" stroke="#3d6c99" stroke-width="1.8" marker-end="url(#ar-s)"/>
+  <line x1="1230" y1="260" x2="1230" y2="284" stroke="#3d6c99" stroke-width="1.8" marker-end="url(#ar-s)"/>
+  <line x1="1230" y1="342" x2="1230" y2="814" stroke="#3d6c99" stroke-width="2" marker-start="url(#ar-s)" marker-end="url(#ar-s)"/>
+  <text x="1242" y="560" font-size="11" font-weight="600" fill="#3d6c99">WebSocket + HTTP</text>
+  <text x="1242" y="578" font-size="10.5" fill="#3d6c99">纯 JS · 不经原生层</text>
+</svg>

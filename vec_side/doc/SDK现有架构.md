@@ -158,7 +158,19 @@ sequenceDiagram
 - **默认值约定**:WORD `0xFFFF` / DWORD `0xFFFFFFFF` 表示无效值,JS 层按此判断显示 "--"。
 - 解码时 SDK 内完成 **单位换算**(如速度 ×3.6 转 km/h)和 **WGS84→GCJ02 坐标转换**。
 
-## 6. 替换边界(换 SDK / 换硬件时动哪里)
+## 6. ⚠️ 车机连接地址:实际为固定值(重点)
+
+SDK 本身不写死 IP(`TcpClient(host, port)` 由参数传入),但**地址来源链路最终是固定的**:
+
+- **实际生效地址:`192.168.2.79:5000`**,写死在 `src/utils/Api.js` 的 `proConfig.vcTcp`(`env` 默认 `'pro'`)。
+- `SettingsScreen` 虽可运行时修改(`setCurrentEnv`),但**只改内存变量、不落盘(无 AsyncStorage / redux-persist)**,App 重启即还原为写死值 —— 生产上等同于不可改。
+- 入口现状:Login 页左下角红色"配置App"按钮(**未包 `__DEV__`,release 包也可见**);个人中心 5 秒内连点 5 次开启 `devMode` 后也有入口。均为调试用途,不改变上面的结论。
+- 额外坑:`utils/` 下有 **三份重复配置**(`Api.js`、`Api axios.js`、`Api fetch.js`),默认 IP 还不一致(`.79` vs `.101`);实际生效的只有 `Api.js`(services 均 `from '../utils/Api'` 导入),另两份为废弃副本,改错文件不生效。
+- `cn.cicv.cloud/Main.java` 里写死的 `61721pi2ip51.vicp.fun:45046` 是控制台测试入口,App 运行时不会执行,属死代码。
+
+**对本次更换的影响**:新硬件的连接地址若与 `192.168.2.79:5000` 不同,**必须改代码重新打包**。建议随替换一并改造:连接参数持久化(AsyncStorage / redux-persist)+ 写死默认值兜底;若新硬件支持,优先考虑设备发现机制,避免逐台刷包配 IP。
+
+## 7. 替换边界(换 SDK / 换硬件时动哪里)
 
 对 RN JS 层来说,原生侧的稳定契约只有 **3 个接口**:
 
