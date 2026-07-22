@@ -1,0 +1,7 @@
+# macOS
+.DS_Store
+
+# Syncthing 同步标记 / 忽略配置（不入 git）
+.stfolder/
+.stversions/
+.stignore
